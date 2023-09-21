@@ -7,6 +7,7 @@ export type RenderOptions = {
     viewport: puppeteer.Viewport;
     waitUntil: puppeteer.WaitForOptions['waitUntil'];
     pdf: puppeteer.PDFOptions;
+    image: puppeteer.ScreenshotOptions;
 };
 
 const defaultOptions: RenderOptions = {
@@ -14,9 +15,10 @@ const defaultOptions: RenderOptions = {
     viewport: { width: 1600, height: 1200 },
     waitUntil: 'networkidle2',
     pdf: { format: 'a4', printBackground: true },
+    image: {},
 };
 
-const render = async (html: string, customOptions?: Partial<RenderOptions> | null) => {
+export const renderPdf = async (html: string, customOptions?: Partial<RenderOptions> | null) => {
     const options = merge(defaultOptions, customOptions);
 
     // start browser
@@ -57,4 +59,43 @@ const render = async (html: string, customOptions?: Partial<RenderOptions> | nul
     return pdf;
 };
 
-export default render;
+export const renderImage = async (html: string, customOptions?: Partial<RenderOptions> | null) => {
+    const options = merge(defaultOptions, customOptions);
+
+    // start browser
+    const browser = await getBrowser();
+    // start page
+    const page = await browser.newPage();
+
+    // print on console
+    page.on('console', (...messages) => console.info('Console logs:', ...messages));
+
+    // print on error
+    page.on('error', err => {
+        console.error(`Error event emitted: ${err}`);
+        console.error(err.stack);
+        browser.close();
+    });
+
+    let image: Buffer;
+
+    try {
+        // set view port
+        await page.setViewport(options.viewport);
+
+        if (options.emulateScreenMedia) {
+            await page.emulateMediaType('screen');
+        }
+
+        // set html content
+        await page.setContent(html, { waitUntil: options.waitUntil });
+
+        // render to image
+        image = (await page.screenshot(options.image)) as Buffer;
+    } finally {
+        // close the page
+        await page.close();
+    }
+
+    return image;
+};
