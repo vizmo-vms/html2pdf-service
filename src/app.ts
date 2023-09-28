@@ -42,40 +42,19 @@ app.get('/.live', async (req, res, next) => {
 });
 
 // render pdf
-app.post('/pdf', async (req, res, next) => {
+const handleRender = (renderFunc, contentType) => async (req, res, next) => {
     try {
-        // get inputs from the json payload
         const { html = '', options = null } = req.body;
-
-        // render the PDF
-        const pdf = await renderPdf(html, options);
-
-        // reply with express
-        res.set('content-type', 'application/pdf');
-        res.send(pdf);
+        const result = await renderFunc(html, options);
+        res.set('content-type', contentType);
+        res.send(result);
     } catch (error) {
-        // continue with the error
         next(error);
     }
-});
+};
 
-// render image
-app.post('/image', async (req, res, next) => {
-    try {
-        // get inputs from the json payload
-        const { html = '', options = null } = req.body;
-
-        // render the image
-        const image = await renderImage(html, options);
-
-        // reply with express
-        res.set('content-type', 'image/jpeg');
-        res.send(image);
-    } catch (error) {
-        // continue with the error
-        next(error);
-    }
-});
+app.post('/pdf', handleRender(renderPdf, 'application/pdf'));
+app.post('/image', handleRender(renderImage, 'image/jpeg'));
 
 // render page
 app.post('/', async (req, res, next) => {
