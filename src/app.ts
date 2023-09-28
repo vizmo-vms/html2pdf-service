@@ -53,26 +53,9 @@ const handleRender = (renderFunc, contentType) => async (req, res, next) => {
     }
 };
 
-app.post('/pdf', handleRender(renderPdf, 'application/pdf'));
 app.post('/image', handleRender(renderImage, 'image/jpeg'));
-
-// render page
-app.post('/', async (req, res, next) => {
-    try {
-        // get inputs from the json payload
-        const { html = '', options = null } = req.body;
-
-        // render the PDF
-        const pdf = await renderPdf(html, options);
-
-        // reply with express
-        res.set('content-type', 'application/pdf');
-        res.send(pdf);
-    } catch (error) {
-        // continue with the error
-        next(error);
-    }
-});
+app.post('/pdf', handleRender(renderPdf, 'application/pdf'));
+app.post('/', handleRender(renderPdf, 'application/pdf'));
 
 // error handler
 app.use((error, req, res, next) => {
