@@ -2,7 +2,7 @@ import compression from 'compression';
 import express from 'express';
 import morgan from 'morgan';
 import { getBrowser } from './browser.js';
-import render from './render.js';
+import { renderPdf, renderImage } from './render.js';
 
 const app = express();
 
@@ -41,23 +41,21 @@ app.get('/.live', async (req, res, next) => {
     }
 });
 
-// render page
-app.post('/', async (req, res, next) => {
+// render pdf
+const handleRender = (renderFunc, contentType) => async (req, res, next) => {
     try {
-        // get inputs from the json payload
         const { html = '', options = null } = req.body;
-
-        // render the PDF
-        const pdf = await render(html, options);
-
-        // reply with express
-        res.set('content-type', 'application/pdf');
-        res.send(pdf);
+        const result = await renderFunc(html, options);
+        res.set('content-type', contentType);
+        res.send(result);
     } catch (error) {
-        // continue with the error
         next(error);
     }
-});
+};
+
+app.post('/image', handleRender(renderImage, 'image/jpeg'));
+app.post('/pdf', handleRender(renderPdf, 'application/pdf'));
+app.post('/', handleRender(renderPdf, 'application/pdf'));
 
 // error handler
 app.use((error, req, res, next) => {
